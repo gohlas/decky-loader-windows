@@ -1,8 +1,9 @@
 name: Builder Win
 
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
+  #push:
+  #pull_request:
 
 permissions:
   contents: write
