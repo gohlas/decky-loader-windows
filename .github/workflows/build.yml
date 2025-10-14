@@ -1,9 +1,10 @@
 name: Builder
 
 on:
-  push:
-  pull_request:
-  workflow_call:
+  workflow_dispatch:
+  #push:
+  #pull_request:
+  #workflow_call:
   # schedule:
   #   - cron: '0 13 * * *' # run at 1 PM UTC
 

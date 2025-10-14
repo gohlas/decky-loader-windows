@@ -1,6 +1,8 @@
 name: Push Updated Plugin Stub to Template
 
-on: push
+on: 
+  workflow_dispatch:
+  #push
 
 jobs:
   copy-stub:

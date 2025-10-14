@@ -1,8 +1,9 @@
 name: Type Check
 
-on:
-  push:
-  pull_request:
+on: 
+  workflow_dispatch:
+  #push
+  #pull_request:
 
 jobs:
   typecheck:
