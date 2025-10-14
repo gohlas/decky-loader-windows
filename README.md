@@ -1,3 +1,25 @@
+# Decky Loader for Windows Releases
+
+The idea of this repo is to make regular releases same as the official repo, in order to have better control of which version the windows release is based as well as trying to make the windows version fully functional.
+No new features are planned into this repository, only make version releases as per official Decky Loader and tweeks to make it to work windows.
+Manual installation still needed.
+
+## ⚠️ Disclaimer
+
+**This is an unofficial project and is not affiliated with, endorsed, or supported by the official Decky Loader team.**
+**No support will be provided by the Decky Loader team for any Windows Decky installations or Decky installations performed using this release.**
+
+## Features
+
+- You can now see which version of decky loader is running inside the plugin.
+- No more updates available notification when you are up to date!
+- Easier way to find what to install, just go into the release page and grab the version you want.
+
+#
+
+
+# Decky Loader
+
 <h1 align="center">
   <a name="logo" href="https://deckbrew.xyz/"><img src="https://deckbrew.xyz/static/icon-45ca1f5aea376a9ad37e92db906f283e.png" alt="Deckbrew logo" width="200"></a>
   <br>
