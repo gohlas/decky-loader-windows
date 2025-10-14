@@ -1,4 +1,4 @@
-name: Builder Win Manual
+name: Windows Release
 
 on:
   workflow_dispatch:
@@ -73,3 +73,21 @@ jobs:
         path: |
           ./backend/dist/PluginLoader.exe
           ./backend/dist/PluginLoader_noconsole.exe
+
+    - name: Create Git tag 🏷️
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
+        git push origin "v${{ github.event.inputs.version }}"
+
+    - name: Create GitHub Release 📦
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: Release v${{ github.event.inputs.version }}
+        body: |
+          Windows build release for version **v${{ github.event.inputs.version }}**
+        files: |
+          backend/dist/PluginLoader.exe
+          backend/dist/PluginLoader_noconsole.exe
