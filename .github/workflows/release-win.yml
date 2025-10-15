@@ -7,6 +7,14 @@ on:
         description: 'Release version'
         required: true
         default: '3.0.0'
+      channel:
+        description: 'Release type (release or prerelease)'
+        required: true
+        type: choice
+        options:
+          - release
+          - prerelease
+        default: release
 
 permissions:
   contents: write
@@ -64,7 +72,9 @@ jobs:
 
     - name: Build Python Backend (noconsole) 🛠️
       working-directory: ./backend
-      run: $env:DECKY_NOCONSOLE = 1; C:\Users\runneradmin\.local\bin\poetry run pyinstaller pyinstaller.spec
+      run: |
+        $env:DECKY_NOCONSOLE = 1
+        C:\Users\runneradmin\.local\bin\poetry run pyinstaller pyinstaller.spec
 
     - name: Upload package artifact ⬆️
       uses: actions/upload-artifact@v4
@@ -85,9 +95,11 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.event.inputs.version }}
-        name: Release v${{ github.event.inputs.version }}
+        name: |
+          ${{ github.event.inputs.channel == 'prerelease' && format('Prerelease v{0}', github.event.inputs.version) || format('Release v{0}', github.event.inputs.version) }}
         body: |
-          Windows build release for version **v${{ github.event.inputs.version }}**
+          Windows **${{ github.event.inputs.channel }}** build for version **v${{ github.event.inputs.version }}**
         files: |
           backend/dist/PluginLoader.exe
           backend/dist/PluginLoader_noconsole.exe
+        prerelease: ${{ github.event.inputs.channel == 'prerelease' }}
