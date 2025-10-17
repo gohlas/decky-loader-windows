@@ -28,11 +28,12 @@ jobs:
     - name: Checkout 🧰
       uses: actions/checkout@v4
 
+    # Inject version number into the batch installer first
     - name: Inject version into install_windows.bat 🧩
       shell: pwsh
       run: |
         $version = "${{ github.event.inputs.version }}"
-        $batPath = "backend/dist/install_windows.bat"
+        $batPath = "dist/install_windows.bat"
 
         if (-Not (Test-Path $batPath)) {
           Write-Error "❌ File not found: $batPath"
@@ -97,7 +98,7 @@ jobs:
         path: |
           ./backend/dist/PluginLoader.exe
           ./backend/dist/PluginLoader_noconsole.exe
-          ./backend/dist/install_windows.bat
+          ./dist/install_windows.bat
 
     - name: Create Git tag 🏷️
       run: |
@@ -117,4 +118,4 @@ jobs:
         files: |
           backend/dist/PluginLoader.exe
           backend/dist/PluginLoader_noconsole.exe
-          backend/dist/install_windows.bat
+          dist/install_windows.bat
