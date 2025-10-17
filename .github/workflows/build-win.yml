@@ -1,21 +1,40 @@
-name: Builder Win
+name: Windows Release
 
 on:
   workflow_dispatch:
-  #push:
-  #pull_request:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: '3.0.0'
+      channel:
+        description: 'Release channel (release or prerelease)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - prerelease
 
 permissions:
   contents: write
 
 jobs:
   build-win:
-    name: Build PluginLoader for Win
+    name: Build PluginLoader for Windows
     runs-on: windows-2022
 
     steps:
     - name: Checkout 🧰
       uses: actions/checkout@v4
+
+    - name: Inject version into install_windows.bat 🧩
+      working-directory: ./backend/dist
+      shell: pwsh
+      run: |
+        $version = "${{ github.event.inputs.version }}"
+        (Get-Content install_windows.bat) -replace 'set "FIXED_VERSION=.*"', "set `"FIXED_VERSION=v$version`"" | Set-Content install_windows.bat
+        Write-Host "Injected version v$version into install_windows.bat"
 
     - name: Set up NodeJS 20 💎
       uses: actions/setup-node@v4
@@ -31,11 +50,17 @@ jobs:
       uses: snok/install-poetry@v1
       with:
         virtualenvs-create: false
-        
+
+    - name: Override version in pyproject.toml 🔖
+      working-directory: ./backend
+      run: |
+        $version = "${{ github.event.inputs.version }}"
+        (Get-Content pyproject.toml) -replace 'version\s*=\s*".*"', "version = `"$version`"" | Set-Content pyproject.toml
+        Write-Host "Set version to $version"
+
     - name: Install Python dependencies ⬇️
       working-directory: ./backend
       run: |
-        C:\Users\runneradmin\.local\bin\poetry self add "poetry-dynamic-versioning[plugin]"
         C:\Users\runneradmin\.local\bin\poetry install --no-interaction
 
     - name: Install JS dependencies ⬇️
@@ -51,12 +76,13 @@ jobs:
     - name: Build Python Backend 🛠️
       working-directory: ./backend
       run: |
-        C:\Users\runneradmin\.local\bin\poetry dynamic-versioning
         C:\Users\runneradmin\.local\bin\poetry run pyinstaller pyinstaller.spec
 
     - name: Build Python Backend (noconsole) 🛠️
       working-directory: ./backend
-      run: $env:DECKY_NOCONSOLE = 1; C:\Users\runneradmin\.local\bin\poetry run pyinstaller pyinstaller.spec
+      run: |
+        $env:DECKY_NOCONSOLE = 1
+        C:\Users\runneradmin\.local\bin\poetry run pyinstaller pyinstaller.spec
 
     - name: Upload package artifact ⬆️
       uses: actions/upload-artifact@v4
@@ -65,4 +91,24 @@ jobs:
         path: |
           ./backend/dist/PluginLoader.exe
           ./backend/dist/PluginLoader_noconsole.exe
-    
+          ./backend/dist/install_windows.bat
+
+    - name: Create Git tag 🏷️
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
+        git push origin "v${{ github.event.inputs.version }}"
+
+    - name: Create GitHub Release 📦
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: Release v${{ github.event.inputs.version }}
+        body: |
+          Windows build release for version **v${{ github.event.inputs.version }}**
+        prerelease: ${{ github.event.inputs.channel == 'prerelease' }}
+        files: |
+          backend/dist/PluginLoader.exe
+          backend/dist/PluginLoader_noconsole.exe
+          backend/dist/install_windows.bat
