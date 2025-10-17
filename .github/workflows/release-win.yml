@@ -76,11 +76,12 @@ jobs:
         $env:DECKY_NOCONSOLE = 1
         C:\Users\runneradmin\.local\bin\poetry run pyinstaller pyinstaller.spec
 
-    - name: Generate dynamic Install.bat 📝
-      working-directory: ./backend/dist
-      run: |
-        $version = "${{ github.event.inputs.version }}"
-        $batContent = @"
+- name: Generate dynamic Install.bat 📝
+  working-directory: ./backend/dist
+  shell: pwsh
+  run: |
+    $version = "${{ github.event.inputs.version }}"
+    $batContent = @'
 @echo off
 title Decky Loader Server Updater
 echo Updating Decky Loader server files...
@@ -91,7 +92,7 @@ setlocal
 set "SERVER_DIR=%USERPROFILE%\homebrew\server"
 
 :: Use version from release
-set "FIXED_VERSION=v$version"
+set "FIXED_VERSION=v'$version'"
 
 echo Installing Decky Loader version: %FIXED_VERSION%
 
@@ -144,9 +145,8 @@ timeout /t 10 >nul
 
 endlocal
 exit /b 0
-"@
-        $batContent | Out-File -FilePath "Install.bat" -Encoding ASCII
-
+'@
+    $batContent | Set-Content -LiteralPath "Install.bat" -Encoding ASCII
     - name: Upload package artifact ⬆️
       uses: actions/upload-artifact@v4
       with:
