@@ -29,12 +29,18 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Inject version into install_windows.bat 🧩
-      working-directory: ./backend/dist
       shell: pwsh
       run: |
         $version = "${{ github.event.inputs.version }}"
-        (Get-Content install_windows.bat) -replace 'set "FIXED_VERSION=.*"', "set `"FIXED_VERSION=v$version`"" | Set-Content install_windows.bat
-        Write-Host "Injected version v$version into install_windows.bat"
+        $batPath = "backend/dist/install_windows.bat"
+
+        if (-Not (Test-Path $batPath)) {
+          Write-Error "❌ File not found: $batPath"
+          exit 1
+        }
+
+        (Get-Content $batPath) -replace 'set "FIXED_VERSION=.*"', "set `"FIXED_VERSION=v$version`"" | Set-Content $batPath
+        Write-Host "✅ Injected version v$version into $batPath"
 
     - name: Set up NodeJS 20 💎
       uses: actions/setup-node@v4
