@@ -8,25 +8,33 @@ on:
         required: true
         default: '3.0.0'
       channel:
-        description: 'Release type (release or prerelease)'
+        description: 'Release channel (release or prerelease)'
         required: true
+        default: 'release'
         type: choice
         options:
           - release
           - prerelease
-        default: release
 
 permissions:
   contents: write
 
 jobs:
   build-win:
-    name: Build PluginLoader for Win
+    name: Build PluginLoader for Windows
     runs-on: windows-2022
 
     steps:
     - name: Checkout 🧰
       uses: actions/checkout@v4
+
+    - name: Inject version into install_windows.bat 🧩
+      working-directory: ./backend/dist
+      shell: pwsh
+      run: |
+        $version = "${{ github.event.inputs.version }}"
+        (Get-Content install_windows.bat) -replace 'set "FIXED_VERSION=.*"', "set `"FIXED_VERSION=v$version`"" | Set-Content install_windows.bat
+        Write-Host "Injected version v$version into install_windows.bat"
 
     - name: Set up NodeJS 20 💎
       uses: actions/setup-node@v4
@@ -76,77 +84,6 @@ jobs:
         $env:DECKY_NOCONSOLE = 1
         C:\Users\runneradmin\.local\bin\poetry run pyinstaller pyinstaller.spec
 
-    - name: Generate dynamic Install.bat 📝
-      working-directory: ./backend/dist
-      shell: pwsh
-      run: |
-        $version = "${{ github.event.inputs.version }}"
-        $batContent = @'
-          @echo off
-          title Decky Loader Server Updater
-          echo Updating Decky Loader server files...
-          
-          setlocal
-          
-          :: Set server folder path
-          set "SERVER_DIR=%USERPROFILE%\homebrew\server"
-          
-          :: Use version from release
-          set "FIXED_VERSION=v'$version'"
-          
-          echo Installing Decky Loader version: %FIXED_VERSION%
-          
-          :: Construct download URLs dynamically from GitHub release
-          set "PLUGIN1_URL=https://github.com/gohlas/decky-loader-windows/releases/download/%FIXED_VERSION%/PluginLoader.exe"
-          set "PLUGIN2_URL=https://github.com/gohlas/decky-loader-windows/releases/download/%FIXED_VERSION%/PluginLoader_noconsole.exe"
-          
-          :: Force close running instances
-          echo Closing any running PluginLoader processes...
-          taskkill /F /IM PluginLoader.exe >nul 2>&1
-          taskkill /F /IM PluginLoader_noconsole.exe >nul 2>&1
-          
-          :: Ensure server directory exists
-          if not exist "%SERVER_DIR%" mkdir "%SERVER_DIR%"
-          
-          :: Download the files with retries
-          echo Downloading PluginLoader.exe...
-          curl -L --retry 5 -o "%SERVER_DIR%\PluginLoader.exe" "%PLUGIN1_URL%"
-          
-          echo Downloading PluginLoader_noconsole.exe...
-          curl -L --retry 5 -o "%SERVER_DIR%\PluginLoader_noconsole.exe" "%PLUGIN2_URL%"
-          
-          echo Update completed successfully.
-          
-          :: Restart PluginLoader_noconsole.exe
-          echo Starting PluginLoader_noconsole.exe...
-          start "" "%SERVER_DIR%\PluginLoader_noconsole.exe"
-          
-          :: Loop to check if PluginLoader_noconsole.exe is running (max 10 seconds)
-          set "FOUND=0"
-          for /L %%i in (1,1,10) do (
-              tasklist /FI "IMAGENAME eq PluginLoader_noconsole.exe" | findstr /I "PluginLoader_noconsole.exe" >nul
-              if %ERRORLEVEL%==0 (
-                  set "FOUND=1"
-                  goto :Running
-              )
-              timeout /t 1 >nul
-          )
-          
-          :Running
-          if %FOUND%==1 (
-              echo PluginLoader_noconsole.exe is running successfully.
-          ) else (
-              echo ERROR: PluginLoader_noconsole.exe failed to start within 10 seconds.
-          )
-          
-          :: Auto-close after 10 seconds
-          echo This window will close automatically in 10 seconds...
-          timeout /t 10 >nul
-          
-          endlocal
-          exit /b 0
-          '@
-        $batContent | Set-Content -LiteralPath "Install.bat" -Encoding ASCII
     - name: Upload package artifact ⬆️
       uses: actions/upload-artifact@v4
       with:
@@ -154,7 +91,7 @@ jobs:
         path: |
           ./backend/dist/PluginLoader.exe
           ./backend/dist/PluginLoader_noconsole.exe
-          ./backend/dist/Install.bat
+          ./backend/dist/install_windows.bat
 
     - name: Create Git tag 🏷️
       run: |
@@ -167,12 +104,11 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.event.inputs.version }}
-        name: |
-          ${{ github.event.inputs.channel == 'prerelease' && format('Prerelease v{0}', github.event.inputs.version) || format('Release v{0}', github.event.inputs.version) }}
+        name: Release v${{ github.event.inputs.version }}
         body: |
-          Windows **${{ github.event.inputs.channel }}** build for version **v${{ github.event.inputs.version }}**
+          Windows build release for version **v${{ github.event.inputs.version }}**
+        prerelease: ${{ github.event.inputs.channel == 'prerelease' }}
         files: |
           backend/dist/PluginLoader.exe
           backend/dist/PluginLoader_noconsole.exe
-          backend/dist/Install.bat
-        prerelease: ${{ github.event.inputs.channel == 'prerelease' }}
+          backend/dist/install_windows.bat
