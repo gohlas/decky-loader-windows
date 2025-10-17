@@ -28,20 +28,26 @@ jobs:
     - name: Checkout 🧰
       uses: actions/checkout@v4
 
-    # Inject version number into the batch installer first
-    - name: Inject version into install_windows.bat 🧩
+    # Inject version and rename installer
+    - name: Inject version and rename installer 🧩
       shell: pwsh
       run: |
         $version = "${{ github.event.inputs.version }}"
-        $batPath = "dist/install_windows.bat"
+        $sourcePath = "dist/install_windows.bat"
+        $targetPath = "dist/Install_Decky_for_Windows.bat"
 
-        if (-Not (Test-Path $batPath)) {
-          Write-Error "❌ File not found: $batPath"
+        if (-Not (Test-Path $sourcePath)) {
+          Write-Error "❌ File not found: $sourcePath"
           exit 1
         }
 
-        (Get-Content $batPath) -replace 'set "FIXED_VERSION=.*"', "set `"FIXED_VERSION=v$version`"" | Set-Content $batPath
-        Write-Host "✅ Injected version v$version into $batPath"
+        # Inject version number
+        (Get-Content $sourcePath) -replace 'set "FIXED_VERSION=.*"', "set `"FIXED_VERSION=v$version`"" | Set-Content $sourcePath
+        Write-Host "✅ Injected version v$version into $sourcePath"
+
+        # Rename to final name
+        Rename-Item -Path $sourcePath -NewName (Split-Path $targetPath -Leaf) -Force
+        Write-Host "📦 Renamed to $targetPath"
 
     - name: Set up NodeJS 20 💎
       uses: actions/setup-node@v4
@@ -98,7 +104,7 @@ jobs:
         path: |
           ./backend/dist/PluginLoader.exe
           ./backend/dist/PluginLoader_noconsole.exe
-          ./dist/install_windows.bat
+          ./dist/Install_Decky_for_Windows.bat
 
     - name: Create Git tag 🏷️
       run: |
@@ -118,4 +124,4 @@ jobs:
         files: |
           backend/dist/PluginLoader.exe
           backend/dist/PluginLoader_noconsole.exe
-          dist/install_windows.bat
+          dist/Install_Decky_for_Windows.bat
